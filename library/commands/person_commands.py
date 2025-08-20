@@ -43,7 +43,8 @@ def list_people(ctx):
 
     console.print("\n[bold]👥 Registered People[/bold]")
     for person in all_people:
-        console.print(f"  [cyan]Name:[/] {person.name} | [cyan]Phone:[/] {person.phone_number}")
+        console.print(f"  [cyan]ID:[/] {person.id} | [cyan]Name:[/] {person.name} | [cyan]Phone:[/] {person.phone_number}")
+
 
 @people.command()
 @click.argument('name')
@@ -57,6 +58,7 @@ def get(ctx, name: str):
         person = person_service.get_person_by_name(name)
         if person:
             console.print("\n[bold]🔍 Found Person[/bold]")
+            console.print(f"  [cyan]ID:[/] {person.id}")
             console.print(f"  [cyan]Name:[/] {person.name}")
             console.print(f"  [cyan]Phone:[/] {person.phone_number}")
         else:
@@ -83,3 +85,21 @@ def edit(ctx, old_name: str, new_name: str, new_phone: str):
         console.print(f"[green]Successfully updated details for '{old_name}'.[/green]")
     except ValueError as e:
         console.print(f"[red]Error: {e}[/red]", err=True)
+
+@people.command()
+@click.argument('query')
+@click.pass_context
+def search(ctx, query: str):
+    """
+    Searches for people by name or phone number.
+    """
+    person_service: PersonService = ctx.obj['person_service']
+    results = person_service.search_people(query)
+
+    if not results:
+        console.print(f"[yellow]No people found matching '{query}'.[/yellow]")
+        return
+
+    console.print(f"\n[bold]🔍 Search Results for '{query}'[/bold]")
+    for person in results:
+        console.print(f"  [cyan]ID:[/] {person.id} | [cyan]Name:[/] {person.name} | [cyan]Phone:[/] {person.phone_number}")

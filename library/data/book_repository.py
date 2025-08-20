@@ -36,7 +36,6 @@ class BookRepository(BaseRepository):
                 )
                 new_id = cursor.lastrowid
                 
-                # Return the Book object with the newly assigned ID
                 return Book(
                     id=new_id,
                     title=book.title,
@@ -80,6 +79,26 @@ class BookRepository(BaseRepository):
                     id=row['id']
                 )
             return None
+    
+    def search_books(self, search_term: str) -> List[Book]:
+        """
+        Searches for books by title or author.
+        """
+        query = "SELECT * FROM books WHERE LOWER(title) LIKE ? OR LOWER(author) LIKE ?"
+        term = f'%{search_term.lower()}%'
+        
+        with self.conn:
+            cursor = self.conn.execute(query, (term, term))
+            rows = cursor.fetchall()
+            return [
+                Book(
+                    title=row['title'],
+                    author=row['author'],
+                    isbn=row['isbn'],
+                    is_available=bool(row['is_available']),
+                    id=row['id']
+                ) for row in rows
+            ]
 
     def update_book_availability(self, book_id: int, is_available: bool):
         """

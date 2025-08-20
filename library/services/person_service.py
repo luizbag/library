@@ -61,6 +61,12 @@ class PersonService:
             
         return self.person_repository.get_person_by_name(name)
 
+    def get_person_by_id(self, person_id: int) -> Person:
+        """
+        Retrieves a person by their unique ID.
+        """
+        return self.person_repository.get_person_by_id(person_id)
+
     def get_all_people(self) -> List[Person]:
         """
         Retrieves all people from the library.

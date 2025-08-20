@@ -40,67 +40,58 @@ def list_books(ctx):
     """
     Lists all books in the library.
     """
-    book_service = ctx.obj['book_service']
+    book_service: BookService = ctx.obj['book_service']
     all_books = book_service.get_all_books()
 
     if not all_books:
-        console.print("[yellow]The library is empty. Add some books first![/yellow]")
+        console.print("[yellow]No books found. Add some first![/yellow]")
         return
 
-    console.print("\n[bold]📚 Your Library[/bold]")
+    console.print("\n[bold]📚 Library Books[/bold]")
     for book in all_books:
-        status_color = "green" if book.is_available else "yellow"
-        availability = "Available" if book.is_available else "Borrowed"
-        console.print(f"  [cyan]Title:[/] {book.title} | [cyan]Author:[/] {book.author} | [cyan]ISBN:[/] {book.isbn} | [cyan]Status:[/] [{status_color}]{availability}[/]")
+        status = "[green]Available[/green]" if book.is_available else "[red]On Loan[/red]"
+        console.print(f"  [cyan]ID:[/] {book.id} | [cyan]Title:[/] {book.title} | [cyan]Author:[/] {book.author} | [cyan]ISBN:[/] {book.isbn} | [cyan]Status:[/] {status}")
+
 
 @books.command()
-@click.argument('search_term')
+@click.argument('query')
 @click.pass_context
-def search(ctx, search_term: str):
+def search(ctx, query: str):
     """
-    Searches for books by title.
+    Searches for books by title or author.
     """
-    book_service = ctx.obj['book_service']
-    try:
-        found_books = book_service.search_books_by_title(search_term)
-        if not found_books:
-            console.print(f"[yellow]No books found with the title '{search_term}'.[/yellow]")
-            return
+    book_service: BookService = ctx.obj['book_service']
+    results = book_service.search_books(query)
 
-        console.print(f"\n[bold]🔍 Found Books for '{search_term}'[/bold]")
-        for book in found_books:
-            status_color = "green" if book.is_available else "yellow"
-            availability = "Available" if book.is_available else "Borrowed"
-            console.print(f"  [cyan]Title:[/] {book.title} | [cyan]Author:[/] {book.author} | [cyan]ISBN:[/] {book.isbn} | [cyan]Status:[/] [{status_color}]{availability}[/]")
-            
-    except ValueError as e:
-        console.print(f"[red]Error: {e}[/red]", err=True)
+    if not results:
+        console.print(f"[yellow]No books found matching '{query}'.[/yellow]")
+        return
 
-# my_books/cli_commands/books.py
-# ... (rest of the file) ...
+    console.print(f"\n[bold]🔍 Search Results for '{query}'[/bold]")
+    for book in results:
+        status = "[green]Available[/green]" if book.is_available else "[red]On Loan[/red]"
+        console.print(f"  [cyan]ID:[/] {book.id} | [cyan]Title:[/] {book.title} | [cyan]Author:[/] {book.author} | [cyan]ISBN:[/] {book.isbn} | [cyan]Status:[/] {status}")
 
 @books.command()
 @click.argument('isbn')
 @click.pass_context
-def isbn(ctx, isbn: str):
+def get(ctx, isbn: str):
     """
     Retrieves a book by its ISBN.
     """
-    book_service = ctx.obj['book_service']
-    try:
-        book = book_service.get_book_by_isbn(isbn)
-        if book:
-            status_color = "green" if book.is_available else "yellow"
-            availability = "Available" if book.is_available else "Borrowed"
-            console.print("\n[bold]🔍 Found Book[/bold]")
-            console.print(f"  [cyan]Title:[/] {book.title}")
-            console.print(f"  [cyan]Author:[/] {book.author}")
-            console.print(f"  [cyan]ISBN:[/] {book.isbn}")
-            console.print(f"  [cyan]Status:[/] [{status_color}]{availability}[/]")
-        else:
-            console.print(f"[yellow]No book found with ISBN '{isbn}'.[/yellow]")
-    except ValueError as e:
-        console.print(f"[red]Error: {e}[/red]", err=True)
+    book_service: BookService = ctx.obj['book_service']
+    book = book_service.get_book_by_isbn(isbn)
+
+    if book:
+        status = "Available" if book.is_available else "On Loan"
+        console.print("\n[bold]🔍 Found Book[/bold]")
+        console.print(f"  [cyan]ID:[/] {book.id}")
+        console.print(f"  [cyan]Title:[/] {book.title}")
+        console.print(f"  [cyan]Author:[/] {book.author}")
+        console.print(f"  [cyan]ISBN:[/] {book.isbn}")
+        console.print(f"  [cyan]Status:[/] {status}")
+    else:
+        console.print(f"[yellow]No book found with ISBN '{isbn}'.[/yellow]")
 
 @books.command()
 @click.argument('csv_file', type=click.Path(exists=True))

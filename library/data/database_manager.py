@@ -10,7 +10,7 @@ class DatabaseManager:
         if cls._instance is None:
             cls._instance = super(DatabaseManager, cls).__new__(cls)
             if db_path is None:
-                app_data_dir = Path.home() / '.library-app'
+                app_data_dir = Path.home() / '.library'
                 cls._db_path = app_data_dir / 'library.db'
             else:
                 cls._db_path = Path(db_path)
