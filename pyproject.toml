@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "library"
+version = "0.1.0"
+authors = [
+  { name="Luiz Gavioli", email="luizbag@gmail.com" },
+]
+description = "A command-line application to manage your personal library."
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+    "click",
+    # sqlite3 is part of the standard library, so no need to list it here
+]
+
+[project.scripts]
+library = "library.cli:cli"
