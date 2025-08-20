@@ -1,6 +1,6 @@
 from typing import List
 
-from ..models import Book
+from ..models.models import Book
 from ..data.book_repository import BookRepository
 
 class BookService:
@@ -27,8 +27,7 @@ class BookService:
             raise ValueError("Title, author, and ISBN cannot be empty.")
         
         new_book = Book(title, author, isbn)
-        self.book_repository.add_book(new_book)
-        return new_book
+        return self.book_repository.add_book(new_book)
 
     def get_all_books(self) -> List[Book]:
         """

@@ -1,44 +1,68 @@
-# my_books/data/book_repository.py
 import sqlite3
 from typing import List
 
-from ..models import Book
-from .base_repository import BaseRepository
-from .database_manager import DatabaseManager
+from library.models.models import Book
+from library.data.base_repository import BaseRepository
 
 class BookRepository(BaseRepository):
     """
     Handles all data access for Book objects using SQLite.
     """
-    def __init__(self, db_manager: DatabaseManager):
-        super().__init__(db_manager)
 
     def _create_tables(self):
         """
-        Creates the 'books' table if it doesn't exist.
+        Creates the 'books' table with an auto-incrementing primary key.
         """
         with self.conn:
             self.conn.execute("""
                 CREATE TABLE IF NOT EXISTS books (
-                    isbn TEXT PRIMARY KEY,
+                    id INTEGER PRIMARY KEY,
+                    isbn TEXT NOT NULL,
                     title TEXT NOT NULL,
                     author TEXT NOT NULL,
                     is_available INTEGER NOT NULL
                 )
             """)
 
-    def add_book(self, book: Book):
+    def add_book(self, book: Book) -> Book:
         """
-        Adds a new book to the database.
+        Adds a new book to the database and returns the book with its new ID.
         """
         try:
             with self.conn:
-                self.conn.execute(
+                cursor = self.conn.execute(
                     "INSERT INTO books (isbn, title, author, is_available) VALUES (?, ?, ?, ?)",
                     (book.isbn, book.title, book.author, int(book.is_available))
                 )
+                new_id = cursor.lastrowid
+                
+                # Return the Book object with the newly assigned ID
+                return Book(
+                    id=new_id,
+                    title=book.title,
+                    author=book.author,
+                    isbn=book.isbn,
+                    is_available=book.is_available
+                )
         except sqlite3.IntegrityError:
             raise ValueError(f"Book with ISBN '{book.isbn}' already exists.")
+
+    def get_book_by_id(self, book_id: int) -> Book:
+        """
+        Fetches a book by its auto-generated ID.
+        """
+        with self.conn:
+            cursor = self.conn.execute("SELECT * FROM books WHERE id = ?", (book_id,))
+            row = cursor.fetchone()
+            if row:
+                return Book(
+                    title=row['title'],
+                    author=row['author'],
+                    isbn=row['isbn'],
+                    is_available=bool(row['is_available']),
+                    id=row['id']
+                )
+            return None
 
     def get_book_by_isbn(self, isbn: str) -> Book:
         """
@@ -52,37 +76,19 @@ class BookRepository(BaseRepository):
                     title=row['title'],
                     author=row['author'],
                     isbn=row['isbn'],
-                    is_available=bool(row['is_available'])
+                    is_available=bool(row['is_available']),
+                    id=row['id']
                 )
             return None
 
-    def search_books_by_title(self, search_term: str) -> List[Book]:
+    def update_book_availability(self, book_id: int, is_available: bool):
         """
-        Fetches books from the database with a title containing the search term.
-        """
-        with self.conn:
-            cursor = self.conn.execute(
-                "SELECT * FROM books WHERE title LIKE ?",
-                (f"%{search_term}%",)
-            )
-            rows = cursor.fetchall()
-            return [
-                Book(
-                    title=row['title'],
-                    author=row['author'],
-                    isbn=row['isbn'],
-                    is_available=bool(row['is_available'])
-                ) for row in rows
-            ]
-
-    def update_book_availability(self, isbn: str, is_available: bool):
-        """
-        Updates the availability status of a book.
+        Updates the availability status of a book by its ID.
         """
         with self.conn:
             self.conn.execute(
-                "UPDATE books SET is_available = ? WHERE isbn = ?",
-                (int(is_available), isbn)
+                "UPDATE books SET is_available = ? WHERE id = ?",
+                (int(is_available), book_id)
             )
 
     def get_all_books(self) -> List[Book]:
@@ -97,6 +103,7 @@ class BookRepository(BaseRepository):
                     title=row['title'],
                     author=row['author'],
                     isbn=row['isbn'],
-                    is_available=bool(row['is_available'])
+                    is_available=bool(row['is_available']),
+                    id=row['id']
                 ) for row in rows
             ]
