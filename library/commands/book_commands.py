@@ -1,4 +1,5 @@
 import click
+import csv
 from rich.console import Console
 
 from ..services.book_service import BookService
@@ -100,3 +101,39 @@ def isbn(ctx, isbn: str):
             console.print(f"[yellow]No book found with ISBN '{isbn}'.[/yellow]")
     except ValueError as e:
         console.print(f"[red]Error: {e}[/red]", err=True)
+
+@books.command()
+@click.argument('csv_file', type=click.Path(exists=True))
+@click.pass_context
+def import_csv(ctx, csv_file: str):
+    """
+    Imports books from a CSV file.
+    CSV file must have headers: title, author, isbn
+    """
+    book_service = ctx.obj["book_service"]
+    imported_count=0
+    with open(csv_file, mode='r', encoding='utf-8') as file:
+        reader = csv.DictReader(file)
+        
+        console.print(f"[bold]Importing books from '{csv_file}'...[/bold]")
+        
+        for row in reader:
+            try:
+                title = row['title']
+                author = row['author']
+                isbn = row['isbn']
+                
+                book_service.add_new_book(title, author, isbn)
+                imported_count += 1
+                console.print(f"[green]✔[/green] Added '{title}' by {author} with ISBN {isbn}")
+            
+            except KeyError:
+                console.print("[red]Error: Invalid CSV format. Missing one of the required headers (title, author, isbn).[/red]", err=True)
+                return
+            except ValueError as e:
+                console.print(f"[yellow]✖[/yellow] Skipped '{title}': [red]{e}[/red]", err=True)
+            except Exception as e:
+                console.print(f"[red]An unexpected error occurred: {e}[/red]", err=True)
+    
+    console.print(f"\n[bold green]Import complete! Successfully imported {imported_count} book(s).[/bold green]")
+
